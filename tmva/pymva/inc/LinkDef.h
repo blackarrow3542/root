@@ -14,6 +14,9 @@
 #pragma link C++ class TMVA::MethodPyAdaBoost+;
 #pragma link C++ class TMVA::MethodPyGTB+;
 #pragma link C++ class TMVA::MethodPyKeras+;
+#pragma link C++ class TMVA::MethodPyXGBoost+;
+#pragma link C++ class TMVA::MethodPyLightGBM+;
+#pragma link C++ class TMVA::MethodPyTensorFlow+;
 
 #endif
 
