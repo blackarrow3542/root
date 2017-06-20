@@ -4,10 +4,14 @@ from ROOT import TMVA, TFile, TTree, TCut
 from subprocess import call
 from os.path import isfile
 
+import keras
 from keras.models import Sequential
 from keras.layers.core import Dense, Activation
 from keras.regularizers import l2
-from keras import initializations
+if keras.__version__.startswith("1"):
+    from keras import initializations
+else:
+    from keras import initializers
 from keras.optimizers import SGD
 
 # Setup TMVA
@@ -39,7 +43,11 @@ dataloader.PrepareTrainingAndTestTree(TCut(''),
 
 # Define initialization
 def normal(shape, name=None):
-    return initializations.normal(shape, scale=0.05, name=name)
+    if keras.__version__.startswith("1"):
+        return initializations.normal(shape, scale=0.05, name=name)
+    else:
+        return initializers.normal(shape, scale=0.05, name=name)
+
 
 # Define model
 model = Sequential()

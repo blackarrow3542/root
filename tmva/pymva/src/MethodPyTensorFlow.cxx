@@ -96,11 +96,10 @@ void MethodPyTensorFlow::SetupTensorFlowModel(bool loadTrainedModel) {
                "saver.restore(sess,tf.train.latest_checkpoint('./'))\n"
                "graph = tf.get_default_graph()\n"
                "train_op=graph.get_tensor_by_name(\"train_op:0\")\n"
-               "input = graph.get_tensor_by_name(\"input:0\")\n"
-               "output = graph.get_tensor_by_name(\"output:0\")\n",
+               "tf_input = graph.get_tensor_by_name(\"tf_input:0\")\n"
+               "tf_output = graph.get_tensor_by_name(\"tf_output:0\")\n",
+               "true_label = graph.get_tensor_by_name(\"true_label:0\")\n",
                "Failed to load TensorFlow model from file: "+filenameLoadModel);
-   //PyRunString("model = keras.models.load_model('"+filenameLoadModel+"')",
-   //            "Failed to load TensorFlow model from file: "+filenameLoadModel);
    Log() << kINFO << "Load model from file: " << filenameLoadModel << Endl;
 
    /*
@@ -158,7 +157,8 @@ void MethodPyTensorFlow::Train() {
       const TMVA::Event* e = GetTrainingEvent(i);
       // Fill variables
       for (UInt_t j=0; j<fNVars; j++) {
-         trainDataX[j + i*fNVars] = e->GetValue(j);
+         trainDataX[j + i*fNVars] = e->GetVector(j);
+         //trainDataX[j + i*fNVars] = e->GetValue(j);
       }
       // Fill targets
       // NOTE: For classification, convert class number in one-hot vector,
@@ -287,17 +287,16 @@ void MethodPyTensorFlow::Train() {
    }
 
    // Train model
-   PyRunString("history = model.fit(trainX, trainY, sample_weight=trainWeights, batch_size=batchSize, nb_epoch=numEpochs, verbose=verbose, validation_data=(valX, valY, valWeights), callbacks=callbacks)",
+   PyRunString("for epoch in range(numEpochs): \n"
+               "  total_batch = int(len(trainX)//batchSize) \n"
+               "  for i in range(total_batch): \n"
+               "    feed_dict={tf_input:trainX[batchSize*(i-1):batchSize*i],true_label:trainY[batchSize*(i-1):batchSize*i]} \n"
+               "    sess.run([train_op],feed_dict) \n",
+               "  total_val_batch = int(len(valX)//batchSize) \n"
+               "  for i in range(total_val_batch): \n"
+               "    feed_dict={tf_input:valX[batchSize*(i-1):batchSize*i],true_label:valY[batchSize*(i-1):batchSize*i]} \n"
+               "    sess.run([val_op],feed_dict) \n",
                "Failed to train model");
-       coord = tf.train.Coordinator()
-       threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-       training_steps = 1000
-       //Maybe I should define a generator for input data
-       for step in range(training_steps):
-           feed_dict={trainX[batch_size*step:batch_size*step+1],trainY[batch_size*step][batch_size*step+1]}
-           min_after_deque = 10
-           input_batch, label_batch=tf.train.shuffle_batch([X,label] , batch_size=batch_size, capacity = min_after_dequeue + (number_threads+3) * batch_size, min_after_deque = min_after_deque)
-           sess.run([train_op],feed_dict)
    /*
     * Store trained model to file (only if option 'SaveBestOnly' is NOT activated,
     * because we do not want to override the best model checkpoint)
@@ -313,7 +312,6 @@ void MethodPyTensorFlow::Train() {
    /*
     * Clean-up
     */
-
    delete[] trainDataX;
    delete[] trainDataY;
    delete[] trainDataWeights;
@@ -340,7 +338,7 @@ Double_t MethodPyTensorFlow::GetMvaValue(Double_t *errLower, Double_t *errUpper)
    // Get signal probability (called mvaValue here)
    const TMVA::Event* e = GetEvent();
    for (UInt_t i=0; i<fNVars; i++) fVals[i] = e->GetValue(i);
-   PyRunString("for i,p in enumerate(model.predict(vals)): output[i]=p\n",
+   PyRunString("for i,p in enumerate(sess.run(tf_output,feed_dict={tf_input:vals})): output[i]=p\n",
                "Failed to get predictions");
 
    return fOutput[TMVA::Types::kSignal];

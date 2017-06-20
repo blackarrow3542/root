@@ -10,35 +10,26 @@
 #include "TMVA/PyMethodBase.h"
 
 TString pythonSrc = "\
-from keras.models import Sequential\n\
-from keras.layers.core import Dense, Activation\n\
-from keras import initializations\n\
-from keras.optimizers import SGD\n\
-\n\
-model = Sequential()\n\
-model.add(Dense(64, init=\"normal\", activation=\"relu\", input_dim=4))\n\
-model.add(Dense(2, init=\"normal\", activation=\"softmax\"))\n\
-model.compile(loss=\"categorical_crossentropy\", optimizer=SGD(lr=0.01), metrics=[\"accuracy\",])\n\
-model.save(\"kerasModelClassification.h5\")\n";
-
-TString pythonSrc = "\
 import tensorflow as tf \n\
 saver = tf.train.Saver() \n\
 with tf.Session() as sess: \n\
-    #model setup... \n\
-    w = tf.Variable(tf.zeros([4,1]),name=\"weights\") \n\
-    b = tf.Variable(0, name=\"bias\") \n\
-    input = tf.placeholder(tf.zeros([4]),shape= , name=\"input\") \n\
-    true_label = tf.placeholder(tf.zeros([1]), shape= , name=\"true_label\") \n\
-    predict = tf.matmul(X, w) +b, name =\"output\" \n\
-    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(predict,Y)) \n\
+    #Setup a simple MLP model... \n\
+    input_dim=4 \n\
+    x = tf.placeholder(\"float\", [None, n_input], name=\"tf_input\") \n\
+    y = tf.placeholder(\"float\", [None, 1], name=\"true_label\") \n\
+    w1 = tf.Variable(tf.zeros([4,1]),name=\"weights_1\") \n\
+    b1 = tf.Variable(0, name=\"bias_1\") \n\
+    w2 = tf.Variable(tf.zeros([4,1]),name=\"weights_2\") \n\
+    b2 = tf.Variable(0, name=\"bias_2\") \n\
+    layer_1 = tf.add(tf.matmul(x, w1), b1) \n\
+    layer_1 = tf.nn.relu(layer_1, name =\"layer_1\") \n\
+    output = tf.add(tf.matmul(layer1_output, w2), b2) \n\
+    output = tf.nn.relu(output, name =\"tf_output\") \n\
+    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(output,y), name=\"loss\") \n\
     train_op = tf.train.GradientDescentOptimizer(learning_rate, name=\"train_op\").minimize(loss)  \n\
-    #actual training loop \n\
     init_op = tf.global_variables_initializer() \n\
     sess.run(init_op) \n\
-
-    saver.save(sess, \"tensorflowModelClassification\") \n\
-    sess.close() \n\";
+    saver.save(sess, \"tensorflowModelClassification\") \n";
 
 
 int testPyTensorFLowClassification(){
